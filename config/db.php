@@ -2,7 +2,9 @@
 
 return [
     'class' => 'yii\db\Connection',
-    'dsn' => 'mysql:host=localhost;dbname=yii2basic',
+    // localhost makes PHP try a UNIX socket, which XAMPP doesn't always support on Mac.
+    // 127.0.0.1 forces a TCP connection, which always works.
+    'dsn' => 'mysql:host=127.0.0.1;dbname=lucky_shares',
     'username' => 'root',
     'password' => '',
     'charset' => 'utf8',

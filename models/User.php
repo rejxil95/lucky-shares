@@ -1,104 +1,98 @@
 <?php
+//generated with gii
+//php yii gii/model --tableName=users --modelClass=User
 
 namespace app\models;
 
-class User extends \yii\base\BaseObject implements \yii\web\IdentityInterface
+use Yii;
+
+/**
+ * This is the model class for table "users".
+ *
+ * @property int $id
+ * @property string $first_name
+ * @property string|null $last_name
+ * @property string $email
+ * @property string $date_of_birth
+ * @property string $created_at
+ */
+class User extends \yii\db\ActiveRecord
 {
-    public $id;
-    public $username;
-    public $password;
-    public $authKey;
-    public $accessToken;
-
-    private static $users = [
-        '100' => [
-            'id' => '100',
-            'username' => 'admin',
-            'password' => 'admin',
-            'authKey' => 'test100key',
-            'accessToken' => '100-token',
-        ],
-        '101' => [
-            'id' => '101',
-            'username' => 'demo',
-            'password' => 'demo',
-            'authKey' => 'test101key',
-            'accessToken' => '101-token',
-        ],
-    ];
 
 
     /**
      * {@inheritdoc}
      */
-    public static function findIdentity($id)
+    public static function tableName()
     {
-        return isset(self::$users[$id]) ? new static(self::$users[$id]) : null;
+        return 'users';
+    }
+
+    /**
+     * Add validation rules
+     */
+    public function rules()
+    {
+        return [
+            [['first_name', 'email', 'date_of_birth'], 'required'], // Required fields
+            [['first_name', 'last_name'], 'string', 'max' => 128], // Max length 128
+            [['email'], 'string', 'max' => 255], 
+            [['email'], 'email'], // Must be a valid email
+            [['email'], 'unique'], // Email must be unique
+            [['date_of_birth'], 'date', 'format' => 'php:Y-m-d'], // Validate date format
+            ['date_of_birth', 'validateAge'], // Custom validation for 18+ check
+        ];
     }
 
     /**
      * {@inheritdoc}
      */
-    public static function findIdentityByAccessToken($token, $type = null)
+    public function attributeLabels()
     {
-        foreach (self::$users as $user) {
-            if ($user['accessToken'] === $token) {
-                return new static($user);
-            }
+        return [
+            'id' => 'ID',
+            'first_name' => 'First Name',
+            'last_name' => 'Last Name',
+            'email' => 'Email',
+            'date_of_birth' => 'Date Of Birth',
+            'created_at' => 'Created At',
+        ];
+    }
+
+        /**
+     * Custom validator to ensure user is at least 18 years old
+     */
+    public function validateAge($attribute, $params)
+    {
+        $dob = new \DateTime($this->$attribute);
+        $today = new \DateTime();
+        $age = $dob->diff($today)->y; // Calculate age
+
+        if ($age < 18) {
+            $this->addError($attribute, 'User must be at least 18 years old.');
         }
-
-        return null;
     }
 
     /**
-     * Finds user by username
-     *
-     * @param string $username
-     * @return static|null
+     * Calculate and return user's age when retrieving data
      */
-    public static function findByUsername($username)
+    public function fields()
     {
-        foreach (self::$users as $user) {
-            if (strcasecmp($user['username'], $username) === 0) {
-                return new static($user);
-            }
-        }
-
-        return null;
+        $fields = parent::fields();
+        $fields['age'] = function () {
+            return $this->calculateAge();
+        };
+        return $fields;
     }
 
     /**
-     * {@inheritdoc}
+     * Helper function to calculate age
      */
-    public function getId()
+    public function calculateAge()
     {
-        return $this->id;
+        $dob = new \DateTime($this->date_of_birth);
+        $today = new \DateTime();
+        return $dob->diff($today)->y;
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function getAuthKey()
-    {
-        return $this->authKey;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function validateAuthKey($authKey)
-    {
-        return $this->authKey === $authKey;
-    }
-
-    /**
-     * Validates password
-     *
-     * @param string $password password to validate
-     * @return bool if password provided is valid for current user
-     */
-    public function validatePassword($password)
-    {
-        return $this->password === $password;
-    }
 }
